@@ -1,0 +1,9 @@
+streamlit
+pandas
+numpy
+plotly
+scikit-learn
+scipy
+nltk
+git+https://github.com/ariaghora/mpstemmer.git
+python-Levenshtein
