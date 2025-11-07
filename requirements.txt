@@ -7,3 +7,4 @@ scipy
 nltk
 git+https://github.com/ariaghora/mpstemmer.git
 python-Levenshtein
+matplotlib
