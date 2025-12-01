@@ -4,14 +4,12 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import pickle
-import io
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 st.set_page_config(
-    page_title="Nike & Adidas Market Analysis",
-    page_icon="👟",
+    page_title="E-commerce Market Intelligence Dashboard",
+    page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -55,7 +53,7 @@ def load_data(uploaded_file=None):
 @st.cache_resource
 def create_tfidf_model(_df):
     if 'cleaned_name' not in _df.columns:
-        st.warning("The 'cleaned_name' column was not found. Feature similarity is not available.")
+        st.warning("Column 'cleaned_name' not found. Similarity feature unavailable.")
         return None, None
     
     vectorizer = TfidfVectorizer(max_features=1500, ngram_range=(1, 2))
@@ -63,7 +61,8 @@ def create_tfidf_model(_df):
     return vectorizer, tfidf_matrix
 
 def validate_dataset(df):
-    required_columns = ['Product Name', 'Brand', 'Price', 'Sold', 'Ratings', 'City', 'Store']
+    # Sesuaikan dengan kolom dari gass_fiks
+    required_columns = ['Name', 'Brand', 'Price', 'Sold', 'Rating', 'Location', 'Store']
     missing_columns = [col for col in required_columns if col not in df.columns]
     
     if missing_columns:
@@ -78,12 +77,13 @@ def find_similar_products(df, tfidf_matrix, product_index, top_n=5):
     similar_products['Similarity_Score'] = sim_scores[similar_indices]
     return similar_products
 
-st.sidebar.title("🔍 Data Source")
+# Sidebar - Data Source
+st.sidebar.title("📁 Data Source")
 
 data_source = st.sidebar.radio(
     "Select data source:",
     ["📂 Use Default File", "⬆️ Upload CSV File"],
-    help="Select the default file or upload a new CSV"
+    help="Choose default file or upload new CSV"
 )
 
 uploaded_file = None
@@ -93,14 +93,14 @@ if data_source == "⬆️ Upload CSV File":
     <b>📋 File Format:</b><br>
     • Format: CSV<br>
     • Encoding: UTF-8<br>
-    • Required fields: Product Name, Brand, Price, Sold, Ratings, City, Store
+    • Required columns: Name, Brand, Price, Sold, Rating, Location, Store
     </div>
     """, unsafe_allow_html=True)
     
     uploaded_file = st.sidebar.file_uploader(
         "Upload CSV file",
         type=['csv'],
-        help="Upload the preprocessed file"
+        help="Upload preprocessed file"
     )
     
     if uploaded_file is not None:
@@ -108,10 +108,11 @@ if data_source == "⬆️ Upload CSV File":
         st.sidebar.success(f"✅ File uploaded: {uploaded_file.name}")
         st.sidebar.info(f"📊 Size: {file_size:.2f} KB")
 
+# Load data
 df, source_type = load_data(uploaded_file)
 
 if df is None:
-    st.title("👟 Nike & Adidas E-commerce Analytics")
+    st.title("🔍 E-commerce Market Intelligence Dashboard")
     st.error("❌ Data not found!")
     
     st.markdown("""
@@ -119,11 +120,11 @@ if df is None:
     
     **Option 1: Upload File**
     1. Select "⬆️ Upload CSV File" in the sidebar
-    2. Upload the preprocessed `Clean_dataset.csv` file
-    3. The dashboard will automatically process the data
+    2. Upload your preprocessed `Clean_dataset.csv` file
+    3. Dashboard will automatically process the data
     
     **Option 2: Use Default File**
-    1. Make sure the `Clean_dataset.csv` file is in the same folder as `dashboard.py`
+    1. Make sure `Clean_dataset.csv` is in the same folder as `dashboard.py`
     2. Select "📂 Use Default File" in the sidebar
     
     ---
@@ -131,47 +132,51 @@ if df is None:
     ### 📋 Required File Format:
     
     **Required Columns:**
-    - Product Name
-    - Brand
-    - Price
-    - Sold
-    - Ratings
-    - City
-    - Store
+    - Name (product name)
+    - Brand (any brand/competitor)
+    - Price (price)
+    - Sold (units sold)
+    - Rating (product rating)
+    - Location (city/location)
+    - Store (store name)
     
     **Optional Columns (for additional features):**
     - cleaned_name (for product similarity)
     - Segment / Segment_Label (for segmentation analysis)
+    - Price_scaled, Sold_scaled (for visualization)
     
     ---
     
     ### 💡 Tips:
-    - Files must be in CSV format
+    - File must be in CSV format
     - Encoding: UTF-8
-    - Ensure that preprocessing has been performed according to your project
+    - Works with any brand/competitor data
+    - Ensure preprocessing is completed according to your pipeline
     """)
     
-    with st.expander("📄 See Data Format Examples"):
+    with st.expander("📄 See Data Format Example"):
         sample_data = {
-            'Product Name': ['Nike Air Max 90', 'Adidas Samba OG'],
-            'Brand': ['Nike', 'Adidas'],
-            'Price': [1500000, 1200000],
-            'Sold': [150, 200],
-            'Ratings': [4.8, 4.7],
-            'City': ['Jakarta', 'Surabaya'],
-            'Store': ['Nike Official', 'Adidas Store']
+            'Name': ['Nike Air Max 90', 'Adidas Samba OG', 'Puma Suede Classic'],
+            'Brand': ['Nike', 'Adidas', 'Puma'],
+            'Price': [1500000, 1200000, 900000],
+            'Sold': [150, 200, 180],
+            'Rating': [4.8, 4.7, 4.6],
+            'Location': ['Jakarta', 'Surabaya', 'Bandung'],
+            'Store': ['Nike Official', 'Adidas Store', 'Puma Store']
         }
         st.dataframe(pd.DataFrame(sample_data))
     
     st.stop()
 
+# Validasi dataset
 is_valid, missing_cols = validate_dataset(df)
 
 if not is_valid:
-    st.error(f"❌ The following columns were not found: {', '.join(missing_cols)}")
-    st.info("Make sure your CSV file has gone through the correct preprocessing.")
+    st.error(f"❌ Missing columns: {', '.join(missing_cols)}")
+    st.info("Make sure your CSV file has been properly preprocessed.")
     st.stop()
 
+# Info dataset di sidebar
 if source_type == "uploaded":
     st.sidebar.success("✅ Using uploaded file")
 else:
@@ -188,17 +193,16 @@ if 'Brand' in df.columns:
     for brand, count in brand_counts.items():
         st.sidebar.write(f"• {brand}: {count:,} products")
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 💾 Export Data")
-
+# Create TF-IDF model
 vectorizer, tfidf_matrix = create_tfidf_model(df)
 
+# Filter sidebar
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🔎 Filter Data")
 
 selected_brands = st.sidebar.multiselect(
     "Brand:",
-    options=df['Brand'].unique(),
+    options=sorted(df['Brand'].unique()),
     default=df['Brand'].unique()
 )
 
@@ -209,6 +213,7 @@ price_range = st.sidebar.slider(
     value=(int(df['Price'].min()), int(df['Price'].quantile(0.99)))
 )
 
+# Apply filters
 df_filtered = df[
     (df['Brand'].isin(selected_brands)) &
     (df['Price'] >= price_range[0]) &
@@ -218,6 +223,10 @@ df_filtered = df[
 if len(df_filtered) < len(df):
     st.sidebar.info(f"📊 Showing {len(df_filtered):,} of {len(df):,} products")
 
+# Export data
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 💾 Export Data")
+
 csv = df_filtered.to_csv(index=False).encode('utf-8')
 st.sidebar.download_button(
     label="📥 Download Filtered Data",
@@ -226,17 +235,20 @@ st.sidebar.download_button(
     mime="text/csv"
 )
 
+# Navigation
 st.sidebar.markdown("---")
 st.sidebar.title("🧭 Navigation")
 page = st.sidebar.radio(
     "Select Page:",
-    ["📊 Overview", "🏷️ Market Segmentation", "🏪 Store Analysis", "🔎 Product Similarity", "📈 Price Analysis"]
+    ["📊 Overview", "🏷️ Market Segmentation", "🏪 Store Analysis", "🔎 Product Similarity", "📈 Price Analysis", "⚔️ Competitor Analysis"]
 )
 
+# ==================== PAGE: OVERVIEW ====================
 if page == "📊 Overview":
-    st.title("📊 Nike & Adidas E-commerce Analytics Dashboard")
+    st.title("🔍 E-commerce Market Intelligence Dashboard")
     st.markdown("### Market Overview & Key Insights")
     
+    # Key metrics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Products", f"{len(df_filtered):,}")
@@ -245,7 +257,7 @@ if page == "📊 Overview":
     with col3:
         st.metric("Avg Price", f"Rp {df_filtered['Price'].mean():,.0f}")
     with col4:
-        st.metric("Avg Rating", f"{df_filtered['Ratings'].mean():.2f} ⭐")
+        st.metric("Avg Rating", f"{df_filtered['Rating'].mean():.2f} ⭐")
     
     st.markdown("---")
     
@@ -254,10 +266,11 @@ if page == "📊 Overview":
     with col1:
         st.subheader("Brand Distribution")
         brand_counts = df_filtered['Brand'].value_counts()
+        colors = px.colors.qualitative.Set3[:len(brand_counts)]
         fig = px.pie(
             values=brand_counts.values,
             names=brand_counts.index,
-            color_discrete_sequence=['#1E88E5', '#43A047'],
+            color_discrete_sequence=colors,
             hole=0.4
         )
         fig.update_traces(textposition='inside', textinfo='percent+label')
@@ -270,20 +283,20 @@ if page == "📊 Overview":
             x='Brand',
             y='Price',
             color='Brand',
-            color_discrete_sequence=['#1E88E5', '#43A047']
+            color_discrete_sequence=colors
         )
         fig.update_layout(showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
     
     st.subheader("Top 10 Best Selling Products")
-    top_sellers = df_filtered.nlargest(10, 'Sold')[['Product Name', 'Brand', 'Price', 'Sold', 'Ratings']]
+    top_sellers = df_filtered.nlargest(10, 'Sold')[['Name', 'Brand', 'Price', 'Sold', 'Rating']]
     fig = px.bar(
         top_sellers,
         x='Sold',
-        y='Product Name',
+        y='Name',
         color='Brand',
         orientation='h',
-        color_discrete_sequence=['#1E88E5', '#43A047'],
+        color_discrete_sequence=colors,
         text='Sold'
     )
     fig.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
@@ -291,7 +304,7 @@ if page == "📊 Overview":
     st.plotly_chart(fig, use_container_width=True)
     
     st.subheader("Top 10 Cities by Product Count")
-    city_counts = df_filtered['City'].value_counts().head(10)
+    city_counts = df_filtered['Location'].value_counts().head(10)
     fig = px.bar(
         x=city_counts.values,
         y=city_counts.index,
@@ -303,15 +316,16 @@ if page == "📊 Overview":
     fig.update_layout(showlegend=False, height=400)
     st.plotly_chart(fig, use_container_width=True)
 
+# ==================== PAGE: MARKET SEGMENTATION ====================
 elif page == "🏷️ Market Segmentation":
     st.title("🏷️ Market Segmentation")
     st.markdown("### Product segment analysis based on NMF Topic Modeling")
     
     if 'Segment_Label' not in df_filtered.columns and 'Segment' not in df_filtered.columns:
-        st.warning("⚠️ Segmentation data is not available in this dataset.")
+        st.warning("⚠️ Segmentation data not available in this dataset.")
         st.info("""
         **To enable segmentation analysis:**
-        1. Ensure preprocessing is complete (run all cells in `gass_fiks.py`)
+        1. Ensure complete preprocessing (run all cells in preprocessing script)
         2. Dataset must have 'Segment' or 'Segment_Label' column
         3. Upload complete CSV file
         """)
@@ -336,10 +350,11 @@ elif page == "🏷️ Market Segmentation":
         with col2:
             st.subheader("Brand Distribution per Segment")
             segment_brand = pd.crosstab(df_filtered[segment_col], df_filtered['Brand'])
+            colors = px.colors.qualitative.Set3[:len(segment_brand.columns)]
             fig = px.bar(
                 segment_brand,
                 barmode='group',
-                color_discrete_sequence=['#1E88E5', '#43A047']
+                color_discrete_sequence=colors
             )
             fig.update_layout(xaxis_tickangle=-45, height=400)
             st.plotly_chart(fig, use_container_width=True)
@@ -348,8 +363,8 @@ elif page == "🏷️ Market Segmentation":
         segment_stats = df_filtered.groupby(segment_col).agg({
             'Price': 'mean',
             'Sold': 'sum',
-            'Ratings': 'mean',
-            'Product Name': 'count'
+            'Rating': 'mean',
+            'Name': 'count'
         }).round(2)
         segment_stats.columns = ['Avg Price', 'Total Sold', 'Avg Rating', 'Product Count']
         segment_stats = segment_stats.sort_values('Total Sold', ascending=False)
@@ -369,13 +384,14 @@ elif page == "🏷️ Market Segmentation":
             x='Price',
             y='Sold',
             color=segment_col,
-            size='Ratings',
-            hover_data=['Product Name', 'Brand'],
+            size='Rating',
+            hover_data=['Name', 'Brand'],
             opacity=0.6
         )
         fig.update_layout(height=500)
         st.plotly_chart(fig, use_container_width=True)
 
+# ==================== PAGE: STORE ANALYSIS ====================
 elif page == "🏪 Store Analysis":
     st.title("🏪 Store Analysis")
     st.markdown("### Store Performance & Analysis")
@@ -383,8 +399,8 @@ elif page == "🏪 Store Analysis":
     store_df = df_filtered.groupby('Store').agg({
         'Price': 'mean',
         'Sold': 'sum',
-        'Ratings': 'mean',
-        'Product Name': 'count'
+        'Rating': 'mean',
+        'Name': 'count'
     }).reset_index()
     store_df.columns = ['Store', 'Avg_Price', 'Total_Sold', 'Avg_Rating', 'Product_Count']
     
@@ -434,12 +450,13 @@ elif page == "🏪 Store Analysis":
         use_container_width=True
     )
 
+# ==================== PAGE: PRODUCT SIMILARITY ====================
 elif page == "🔎 Product Similarity":
     st.title("🔎 Product Similarity Finder")
     st.markdown("### Find similar products using Cosine Similarity")
     
     if vectorizer is None or tfidf_matrix is None:
-        st.warning("⚠️ Feature similarity is not available.")
+        st.warning("⚠️ Similarity feature unavailable.")
         st.info("""
         **To enable product similarity:**
         1. Dataset must have 'cleaned_name' column
@@ -448,16 +465,16 @@ elif page == "🔎 Product Similarity":
         **Alternative:** Model will be created automatically if 'cleaned_name' column is available.
         """)
     else:
-        search_term = st.text_input("🔍 Search product:", placeholder="Example: nike air max, adidas samba")
+        search_term = st.text_input("🔍 Search product:", placeholder="Example: nike air max, adidas samba, puma suede")
         
         if search_term:
-            matching_products = df[df['Product Name'].str.contains(search_term, case=False, na=False)]
+            matching_products = df[df['Name'].str.contains(search_term, case=False, na=False)]
             
             if len(matching_products) > 0:
                 selected_product = st.selectbox(
                     "Select product:",
                     options=matching_products.index,
-                    format_func=lambda x: f"{df.loc[x, 'Product Name'][:60]} - Rp {df.loc[x, 'Price']:,.0f}"
+                    format_func=lambda x: f"{df.loc[x, 'Name'][:60]} - Rp {df.loc[x, 'Price']:,.0f}"
                 )
                 
                 if st.button("🔍 Find Similar Products"):
@@ -471,7 +488,7 @@ elif page == "🔎 Product Similarity":
                     with col2:
                         st.metric("Sold", f"{df.loc[selected_product, 'Sold']:,.0f}")
                     with col3:
-                        st.metric("Rating", f"{df.loc[selected_product, 'Ratings']:.2f} ⭐")
+                        st.metric("Rating", f"{df.loc[selected_product, 'Rating']:.2f} ⭐")
                     with col4:
                         st.metric("Brand", df.loc[selected_product, 'Brand'])
                     
@@ -479,24 +496,25 @@ elif page == "🔎 Product Similarity":
                     
                     st.markdown("### 🔗 Similar Products (Top 10)")
                     
+                    colors = px.colors.qualitative.Set3[:len(similar_products['Brand'].unique())]
                     fig = px.bar(
                         similar_products,
                         x='Similarity_Score',
-                        y='Product Name',
+                        y='Name',
                         color='Brand',
                         orientation='h',
-                        color_discrete_sequence=['#1E88E5', '#43A047'],
-                        hover_data=['Price', 'Sold', 'Ratings']
+                        color_discrete_sequence=colors,
+                        hover_data=['Price', 'Sold', 'Rating']
                     )
                     fig.update_layout(height=400, yaxis={'categoryorder':'total ascending'})
                     st.plotly_chart(fig, use_container_width=True)
                     
-                    display_cols = ['Product Name', 'Brand', 'Price', 'Sold', 'Ratings', 'Similarity_Score']
+                    display_cols = ['Name', 'Brand', 'Price', 'Sold', 'Rating', 'Similarity_Score']
                     st.dataframe(
                         similar_products[display_cols].style.format({
                             'Price': 'Rp {:,.0f}',
                             'Sold': '{:,.0f}',
-                            'Ratings': '{:.2f}',
+                            'Rating': '{:.2f}',
                             'Similarity_Score': '{:.4f}'
                         }).background_gradient(cmap='Greens', subset=['Similarity_Score']),
                         use_container_width=True
@@ -504,6 +522,7 @@ elif page == "🔎 Product Similarity":
             else:
                 st.warning("Product not found. Try another keyword!")
 
+# ==================== PAGE: PRICE ANALYSIS ====================
 elif page == "📈 Price Analysis":
     st.title("📈 Price Analysis")
     st.markdown("### Price analysis and pricing strategy")
@@ -524,12 +543,13 @@ elif page == "📈 Price Analysis":
     
     with col1:
         st.subheader("Price Distribution")
+        colors = px.colors.qualitative.Set3[:len(df_filtered['Brand'].unique())]
         fig = px.histogram(
             df_filtered,
             x='Price',
             nbins=50,
             color='Brand',
-            color_discrete_sequence=['#1E88E5', '#43A047'],
+            color_discrete_sequence=colors,
             opacity=0.7
         )
         fig.update_layout(height=400)
@@ -540,10 +560,10 @@ elif page == "📈 Price Analysis":
         fig = px.scatter(
             df_filtered,
             x='Price',
-            y='Ratings',
+            y='Rating',
             color='Brand',
             size='Sold',
-            color_discrete_sequence=['#1E88E5', '#43A047'],
+            color_discrete_sequence=colors,
             opacity=0.6
         )
         fig.update_layout(height=400)
@@ -565,7 +585,7 @@ elif page == "📈 Price Analysis":
             x='Brand',
             y='Price',
             color='Brand',
-            color_discrete_sequence=['#1E88E5', '#43A047'],
+            color_discrete_sequence=colors,
             box=True
         )
         fig.update_layout(showlegend=False, height=400)
@@ -587,10 +607,108 @@ elif page == "📈 Price Analysis":
     fig.update_layout(showlegend=False, height=400)
     st.plotly_chart(fig, use_container_width=True)
 
+# ==================== PAGE: COMPETITOR ANALYSIS ====================
+elif page == "⚔️ Competitor Analysis":
+    st.title("⚔️ Competitor Analysis")
+    st.markdown("### Multi-brand competitive intelligence")
+    
+    # Brand comparison
+    st.subheader("Brand Performance Comparison")
+    brand_stats = df_filtered.groupby('Brand').agg({
+        'Price': ['mean', 'median', 'min', 'max'],
+        'Sold': ['sum', 'mean'],
+        'Rating': 'mean',
+        'Name': 'count'
+    }).round(2)
+    
+    brand_stats.columns = ['Avg Price', 'Median Price', 'Min Price', 'Max Price', 
+                           'Total Sales', 'Avg Sales per Product', 'Avg Rating', 'Product Count']
+    
+    st.dataframe(
+        brand_stats.style.format({
+            'Avg Price': 'Rp {:,.0f}',
+            'Median Price': 'Rp {:,.0f}',
+            'Min Price': 'Rp {:,.0f}',
+            'Max Price': 'Rp {:,.0f}',
+            'Total Sales': '{:,.0f}',
+            'Avg Sales per Product': '{:.2f}',
+            'Avg Rating': '{:.2f}',
+            'Product Count': '{:,.0f}'
+        }).background_gradient(cmap='RdYlGn', subset=['Avg Rating', 'Total Sales']),
+        use_container_width=True
+    )
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Market Share by Sales Volume")
+        brand_sales = df_filtered.groupby('Brand')['Sold'].sum().sort_values(ascending=False)
+        fig = px.pie(
+            values=brand_sales.values,
+            names=brand_sales.index,
+            color_discrete_sequence=px.colors.qualitative.Set3,
+            hole=0.4
+        )
+        fig.update_traces(textposition='inside', textinfo='percent+label')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        st.subheader("Market Share by Product Count")
+        brand_products = df_filtered['Brand'].value_counts()
+        fig = px.pie(
+            values=brand_products.values,
+            names=brand_products.index,
+            color_discrete_sequence=px.colors.qualitative.Pastel,
+            hole=0.4
+        )
+        fig.update_traces(textposition='inside', textinfo='percent+label')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    st.subheader("Price Strategy Comparison")
+    fig = px.box(
+        df_filtered,
+        x='Brand',
+        y='Price',
+        color='Brand',
+        color_discrete_sequence=px.colors.qualitative.Set3,
+        points="outliers"
+    )
+    fig.update_layout(showlegend=False, height=400)
+    st.plotly_chart(fig, use_container_width=True)
+    
+    st.subheader("Sales Performance by Brand")
+    fig = px.box(
+        df_filtered,
+        x='Brand',
+        y='Sold',
+        color='Brand',
+        color_discrete_sequence=px.colors.qualitative.Set3,
+        points="outliers"
+    )
+    fig.update_layout(showlegend=False, height=400, yaxis_type="log")
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Top performers per brand
+    st.subheader("Top Performers by Brand")
+    n_products = st.slider("Number of products to show per brand:", 3, 10, 5)
+    
+    for brand in df_filtered['Brand'].unique():
+        with st.expander(f"🏆 Top {n_products} Best Sellers - {brand}"):
+            brand_top = df_filtered[df_filtered['Brand'] == brand].nlargest(n_products, 'Sold')
+            st.dataframe(
+                brand_top[['Name', 'Price', 'Sold', 'Rating', 'Store']].style.format({
+                    'Price': 'Rp {:,.0f}',
+                    'Sold': '{:,.0f}',
+                    'Rating': '{:.2f}'
+                }),
+                use_container_width=True
+            )
+
+# Footer
 st.markdown("---")
 st.markdown(f"""
     <div style='text-align: center'>
-        <p>Nike & Adidas E-commerce Analytics Dashboard | Built with Streamlit</p>
-        <p style='font-size: 0.8em; color: gray;'>Data Source: {source_type.upper()} | Records: {len(df_filtered):,}</p>
+        <p>E-commerce Market Intelligence Dashboard | Built with Streamlit</p>
+        <p style='font-size: 0.8em; color: gray;'>Data Source: {source_type.upper()} | Records: {len(df_filtered):,} | Brands: {len(df_filtered['Brand'].unique())}</p>
     </div>
     """, unsafe_allow_html=True)
