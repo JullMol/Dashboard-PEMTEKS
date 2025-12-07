@@ -61,7 +61,6 @@ def create_tfidf_model(_df):
     return vectorizer, tfidf_matrix
 
 def validate_dataset(df):
-    # Sesuaikan dengan kolom dari gass_fiks
     required_columns = ['Name', 'Brand', 'Price', 'Sold', 'Rating', 'Location', 'Store']
     missing_columns = [col for col in required_columns if col not in df.columns]
     
@@ -77,7 +76,6 @@ def find_similar_products(df, tfidf_matrix, product_index, top_n=5):
     similar_products['Similarity_Score'] = sim_scores[similar_indices]
     return similar_products
 
-# Sidebar - Data Source
 st.sidebar.title("📁 Data Source")
 
 data_source = st.sidebar.radio(
@@ -108,7 +106,6 @@ if data_source == "⬆️ Upload CSV File":
         st.sidebar.success(f"✅ File uploaded: {uploaded_file.name}")
         st.sidebar.info(f"📊 Size: {file_size:.2f} KB")
 
-# Load data
 df, source_type = load_data(uploaded_file)
 
 if df is None:
@@ -168,7 +165,6 @@ if df is None:
     
     st.stop()
 
-# Validasi dataset
 is_valid, missing_cols = validate_dataset(df)
 
 if not is_valid:
@@ -176,7 +172,6 @@ if not is_valid:
     st.info("Make sure your CSV file has been properly preprocessed.")
     st.stop()
 
-# Info dataset di sidebar
 if source_type == "uploaded":
     st.sidebar.success("✅ Using uploaded file")
 else:
@@ -193,10 +188,8 @@ if 'Brand' in df.columns:
     for brand, count in brand_counts.items():
         st.sidebar.write(f"• {brand}: {count:,} products")
 
-# Create TF-IDF model
 vectorizer, tfidf_matrix = create_tfidf_model(df)
 
-# Filter sidebar
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🔎 Filter Data")
 
@@ -213,7 +206,6 @@ price_range = st.sidebar.slider(
     value=(int(df['Price'].min()), int(df['Price'].quantile(0.99)))
 )
 
-# Apply filters
 df_filtered = df[
     (df['Brand'].isin(selected_brands)) &
     (df['Price'] >= price_range[0]) &
@@ -223,7 +215,6 @@ df_filtered = df[
 if len(df_filtered) < len(df):
     st.sidebar.info(f"📊 Showing {len(df_filtered):,} of {len(df):,} products")
 
-# Export data
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 💾 Export Data")
 
@@ -235,7 +226,6 @@ st.sidebar.download_button(
     mime="text/csv"
 )
 
-# Navigation
 st.sidebar.markdown("---")
 st.sidebar.title("🧭 Navigation")
 page = st.sidebar.radio(
@@ -243,12 +233,10 @@ page = st.sidebar.radio(
     ["📊 Overview", "🏷️ Market Segmentation", "🏪 Store Analysis", "🔎 Product Similarity", "📈 Price Analysis", "⚔️ Competitor Analysis"]
 )
 
-# ==================== PAGE: OVERVIEW ====================
 if page == "📊 Overview":
     st.title("🔍 E-commerce Market Intelligence Dashboard")
     st.markdown("### Market Overview & Key Insights")
     
-    # Key metrics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Products", f"{len(df_filtered):,}")
@@ -316,7 +304,6 @@ if page == "📊 Overview":
     fig.update_layout(showlegend=False, height=400)
     st.plotly_chart(fig, use_container_width=True)
 
-# ==================== PAGE: MARKET SEGMENTATION ====================
 elif page == "🏷️ Market Segmentation":
     st.title("🏷️ Market Segmentation")
     st.markdown("### Product segment analysis based on NMF Topic Modeling")
@@ -391,7 +378,6 @@ elif page == "🏷️ Market Segmentation":
         fig.update_layout(height=500)
         st.plotly_chart(fig, use_container_width=True)
 
-# ==================== PAGE: STORE ANALYSIS ====================
 elif page == "🏪 Store Analysis":
     st.title("🏪 Store Analysis")
     st.markdown("### Store Performance & Analysis")
@@ -450,7 +436,6 @@ elif page == "🏪 Store Analysis":
         use_container_width=True
     )
 
-# ==================== PAGE: PRODUCT SIMILARITY ====================
 elif page == "🔎 Product Similarity":
     st.title("🔎 Product Similarity Finder")
     st.markdown("### Find similar products using Cosine Similarity")
@@ -522,7 +507,6 @@ elif page == "🔎 Product Similarity":
             else:
                 st.warning("Product not found. Try another keyword!")
 
-# ==================== PAGE: PRICE ANALYSIS ====================
 elif page == "📈 Price Analysis":
     st.title("📈 Price Analysis")
     st.markdown("### Price analysis and pricing strategy")
@@ -607,12 +591,10 @@ elif page == "📈 Price Analysis":
     fig.update_layout(showlegend=False, height=400)
     st.plotly_chart(fig, use_container_width=True)
 
-# ==================== PAGE: COMPETITOR ANALYSIS ====================
 elif page == "⚔️ Competitor Analysis":
     st.title("⚔️ Competitor Analysis")
     st.markdown("### Multi-brand competitive intelligence")
     
-    # Brand comparison
     st.subheader("Brand Performance Comparison")
     brand_stats = df_filtered.groupby('Brand').agg({
         'Price': ['mean', 'median', 'min', 'max'],
@@ -622,7 +604,7 @@ elif page == "⚔️ Competitor Analysis":
     }).round(2)
     
     brand_stats.columns = ['Avg Price', 'Median Price', 'Min Price', 'Max Price', 
-                           'Total Sales', 'Avg Sales per Product', 'Avg Rating', 'Product Count']
+                            'Total Sales', 'Avg Sales per Product', 'Avg Rating', 'Product Count']
     
     st.dataframe(
         brand_stats.style.format({
@@ -704,7 +686,6 @@ elif page == "⚔️ Competitor Analysis":
                 use_container_width=True
             )
 
-# Footer
 st.markdown("---")
 st.markdown(f"""
     <div style='text-align: center'>
